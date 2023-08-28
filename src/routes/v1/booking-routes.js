@@ -10,6 +10,11 @@ router.post("/",
     // CityMiddlewares.validateCreateRequest,
     BookingController.createBooking);
 
+// /api/v1/cities POST
+router.post("/payments", 
+    // CityMiddlewares.validateCreateRequest,
+    BookingController.makePayment);    
+
 
 // // /api/v1/cities GET
 // router.get("/", CityController.getCities);
