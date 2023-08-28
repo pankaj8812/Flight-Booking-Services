@@ -12,7 +12,6 @@ class BookingRepository extends CrudRepository{
     }
 
     async getBooking(data, transaction){
-        console.log(data, "get fun");
         const response = await booking.findByPk(data, {transaction: transaction});
         if(!response) {
             throw new AppError('Not able to fund the resource', StatusCodes.NOT_FOUND);
@@ -21,7 +20,6 @@ class BookingRepository extends CrudRepository{
     }
 
     async updateBooking(id , data, transaction){
-        console.log("transaction :",transaction);
         const response = await booking.update(data, {
                 where: {
                     id: id
