@@ -10,6 +10,7 @@ const inMemDb = {};
 
 async function createBooking(req, res){
     try {
+        console.log("body : ", req.body);
         const booking = await BookingServices.creatBooking({
             flightId: req.body.flightId,
             userId: req.body.userId,
@@ -19,6 +20,7 @@ async function createBooking(req, res){
         return res.status(StatusCodes.CREATED)
                    .json(SuccessResponse);
     } catch (error) {
+        console.log(error);
         ErrorResponse.error = error;
         return res.status(error.statusCode).json(ErrorResponse);
     }

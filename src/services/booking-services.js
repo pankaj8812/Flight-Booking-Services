@@ -3,7 +3,7 @@ const { StatusCodes } = require('http-status-codes');
 const { BookingRepository } = require("../repositories");
 const AppError = require("../utils/errors/app-error");
 const axios = require('axios');
-const { ServerConfig } = require("../config");
+const { ServerConfig, Queue } = require("../config");
 const db  = require("../models");
 const {Enums} = require('../utils/common');
 const { BOOKED, CANCELLED } = Enums.BOOKING_STATUS;
@@ -13,6 +13,7 @@ const bookingRepository = new BookingRepository();
 
 async function creatBooking(data){
     try {
+        console.log("Booking service :" , data);
         const transaction = await db.sequelize.transaction(async (t) => {
             const flight = await axios.get(`${ServerConfig.FLIGHT_SERVICE}/api/v1/flights/${data.flightId}`);
             const flightData = flight.data.data;
@@ -29,6 +30,7 @@ async function creatBooking(data){
         });
         return transaction;
     } catch (error) {
+        console.log(error);
         if(error.explanation == "Not enough seats available"){
             throw new AppError('Not enough seats available', StatusCodes.BAD_REQUEST);
         }
@@ -40,14 +42,14 @@ async function makePayment(data){
     try {
         const transaction = await db.sequelize.transaction(async (t) => {
             const bookingDetails = await bookingRepository.getBooking(data.bookingId, t);
-            console.log("booking DEtail :",bookingDetails);
+            console.log("booking Detail :",bookingDetails);
             if(bookingDetails.status == CANCELLED ){
                 throw new AppError('The booking has expired', StatusCodes.INTERNAL_SERVER_ERROR);
             }
 
             const bookingTime = new Date(bookingDetails.createdAt);
             const currentTime = new Date();
-            console.log(bookingTime, "curr :", currentTime);
+           
             if(currentTime - bookingTime > 600000){
                 await cancelBooking(data.bookingId);
                 throw new AppError('The booking has expired due to time out', StatusCodes.BAD_REQUEST);
@@ -62,8 +64,16 @@ async function makePayment(data){
             }
             
             await bookingRepository.updateBooking(data.bookingId, {status : BOOKED}, t);
+
             return true;
         });
+        
+        Queue.sendData({
+            recepientEmail: 'pankajsharma376779@gmail.com',
+            subject: 'Flight booked',
+            text: `Booking successfully done for the booking ${data.bookingId}`
+        })
+
         return transaction;
     } catch (error) {
         throw error;
@@ -102,6 +112,7 @@ async function cancelOldBookings(){
         throw error
     }
 }
+
 
 module.exports = {
     creatBooking,
